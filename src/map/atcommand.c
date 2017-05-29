@@ -58,6 +58,7 @@
 #include "unit.h"
 #include "merc.h"
 #include "elem.h"
+#include "randomoption.h"
 
 static char command_symbol = '@'; /* first char of the commands */
 
@@ -236,6 +237,8 @@ ATCOMMAND_FUNC(changemaptype);
 ATCOMMAND_FUNC(hotkeyset);
 ATCOMMAND_FUNC(callmerc);
 ATCOMMAND_FUNC(alliance);
+//Reload Random Options Here. [Cyrus]
+ATCOMMAND_FUNC(reloadrndopt);
 
 /*==========================================
  * AtCommandInfo atcommand_info[]構造体の定義
@@ -412,6 +415,8 @@ static AtCommandInfo atcommand_info[] = {
 	{ AtCommand_CallMerc,           "@callmerc",         0, atcommand_callmerc,            NULL },
 	{ AtCommand_Alliance,           "@alliance",         0, atcommand_alliance,            NULL },
 		// add here
+		//Reload Random Options Here. [Cyrus]
+	{ AtCommand_ReloadRandomOption,	"@reloadrndopt",	 0,	atcommand_reloadrndopt,		   NULL	},
 	{ AtCommand_MapMove,            "@mapmove",          0, NULL,                          NULL },
 	{ AtCommand_Broadcast,          "@broadcast",        0, NULL,                          NULL },
 	{ AtCommand_LocalBroadcast,     "@local_broadcast",  0, NULL,                          NULL },
@@ -4545,6 +4550,18 @@ int atcommand_reloadmotd(const int fd, struct map_session_data* sd, AtCommandTyp
 }
 
 /*==========================================
+ * Reload Random Options Here. [Cyrus]
+ *------------------------------------------
+ */
+int atcommand_reloadrndopt(const int fd, struct map_session_data* sd, AtCommandType command, const char* message)
+{
+	randomoption_reload();
+	clif_displaymessage(fd, msg_txt(186));
+
+	return 0;
+}
+
+/*==========================================
  * @im
  *   アイテムやモンスターの簡易召還
  *------------------------------------------
@@ -5146,7 +5163,7 @@ static int atcommand_vars_sub(struct map_session_data *sd,const char *src_var,co
 		}
 	} else {
 		const char *format = msg_txt(67);
-		script_write_vars(pl_sd, dst_var, elem, (postfix == '$')? (void*)str: (void*)strtobxl(str,NULL,0), ref);
+		script_write_vars(pl_sd, dst_var, elem, (postfix == '$')? (void*)str: INT2PTR(strtobxl(str,NULL,0)), ref);
 		output = (char *)aMalloc(strlen(format) + strlen(src_var) + strlen(str) + 1);
 		sprintf(output, format, src_var, str);
 	}

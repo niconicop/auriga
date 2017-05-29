@@ -2993,6 +2993,9 @@ void do_final(void)
 	do_final_mob();
 	do_final_atcommand();
 
+	//Finallize Random Option Here. [Cyrus]
+	do_final_randomoption();
+
 	for(i = 0; i < MAX_FLOORITEM; i++) {
 		if(object[i] == NULL)
 			continue;
@@ -3147,6 +3150,9 @@ int do_init(int argc,char *argv[])
 	do_init_ranking();
 	do_init_unit();
 	do_init_extra();
+
+	//Initialize Random Option Here. [Cyrus]
+	do_init_randomoption();
 
 	map_pk_server(map_pk_server_flag);
 	map_pk_nightmaredrop(map_pk_nightmaredrop_flag);

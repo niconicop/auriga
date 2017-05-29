@@ -53,6 +53,7 @@
 #include "merc.h"
 #include "quest.h"
 #include "elem.h"
+#include "randomoption.h"
 
 #define MOB_LAZYMOVEPERC     50		// 手抜きモードMOBの移動確率（千分率）
 #define MOB_LAZYWARPPERC     20		// 手抜きモードMOBのワープ確率（千分率）
@@ -2121,6 +2122,9 @@ static int mob_dead(struct block_list *src,struct mob_data *md,int type,unsigned
 				ditem->third_id  = (mvp[2].bl)? mvp[2].bl->id: 0;
 				add_timer2(tick+500+i,mob_delay_item_drop,0,ditem);
 			}
+
+			//Random Option Drops Here. [Cyrus]
+			randomoption_dropitem(md, tick, (mvp[0].bl) ? mvp[0].bl->id : 0, (mvp[1].bl) ? mvp[1].bl->id : 0, (mvp[2].bl) ? mvp[2].bl->id : 0);
 		}
 		if(sd) {
 			for(i=0; i<sd->monster_drop_item_count; i++) {

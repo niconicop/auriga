@@ -50,6 +50,7 @@
 #include "merc.h"
 #include "elem.h"
 #include "msg.h"
+#include "randomoption.h"
 
 static struct job_db {
 	int max_weight_base;
@@ -713,6 +714,9 @@ L_RECALC:
 			}
 		}
 	}
+
+	//Calc Random Options Here. [Cyrus]
+	randomoption_calc_pc(sd);
 
 	wele    = sd->atk_ele;
 	wele_   = sd->atk_ele_;

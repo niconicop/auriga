@@ -3548,6 +3548,19 @@ void script_write_vars(struct map_session_data *sd,const char *var,int elem,void
 	return;
 }
 
+int script_get_constant(const char * name, int * value)
+{
+	int num = add_str(name);
+
+	if (str_data[num].type == C_INT)
+	{
+		value[0] = str_data[num].u.val;
+		return 1;
+	}
+
+	return 0;
+}
+
 /*==========================================
  * g—p‚³‚ê‚½•Ï”‚Ìˆê——‚ğo—Í
  *------------------------------------------

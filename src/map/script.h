@@ -90,6 +90,8 @@ int script_check_variable(const char *name,int array_flag,int read_only);
 void* script_read_vars(struct map_session_data *sd,const char *var,int elem,struct linkdb_node **ref);
 void script_write_vars(struct map_session_data *sd,const char *var,int elem,void *v,struct linkdb_node **ref);
 
+//
+int script_get_constant(const char *name, int *value);
 #ifdef TXT_ONLY
 	#include "txt/mapreg_txt.h"
 #else
