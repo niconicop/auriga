@@ -22,10 +22,6 @@
 #ifndef	_RANDOMOPTION_H_
 #define	_RANDOMOPTION_H_
 
-#define RANDOMOPTION_AURIGA 0
-#define RANDOMOPTION_RATHENA 1
-#define RANDOMOPTION_VERSION RANDOMOPTION_AURIGA
-
 extern int randomoption_cruuent_opt;
 extern int randomoption_current_val;
 

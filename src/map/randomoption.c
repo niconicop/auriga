@@ -43,23 +43,7 @@
 #include "party.h"
 #include "status.h"
 #include "battle.h"
-
-#if RANDOMOPTION_VERSION == RANDOMOPTION_AURIGA
 #include "bonus.h"
-#define RANDOMOPTION_BONUS1 bonus_param1
-#define RANDOMOPTION_BONUS2 bonus_param2
-#define RANDOMOPTION_BONUS3 bonus_param3
-#define RANDOMOPTION_BONUS4 bonus_param4
-#define RANDOMOPTION_BONUS5 //
-#elif RANDOMOPTION_VERSION == RANDOMOPTION_RATHENA
-#include "pc.h"
-#define RANDOMOPTION_BONUS1 pc_bonus1
-#define RANDOMOPTION_BONUS2 pc_bonus2
-#define RANDOMOPTION_BONUS3 pc_bonus3
-#define RANDOMOPTION_BONUS4 pc_bonus4
-#define RANDOMOPTION_BONUS5 pc_bonus5
-#else
-#endif
 
  //Item Random Option System [Cyrus]
 #define MAX_RANDOMOPTION 256
@@ -67,9 +51,14 @@
 #define MAX_RANDOMOPTION_GROUP 16
 #define MAX_RANDOMOPTION_DROP MOB_ID_MAX - MOB_ID_MIN
 #define MAX_ITEM_RANDOMOPTION 5
-#define MAX_ITEM_RANDOMENCHANTING 4
 #define MAX_ITEM_RANDOMOPTION_DROP 8
 #define MAX_ITEM_RANDOMOPTION_RATE 10000
+
+#define RANDOMOPTION_BONUS1 bonus_param1
+#define RANDOMOPTION_BONUS2 bonus_param2
+#define RANDOMOPTION_BONUS3 bonus_param3
+#define RANDOMOPTION_BONUS4 bonus_param4
+#define RANDOMOPTION_BONUS5 //
 
 int randomoption_cruuent_opt;
 int randomoption_current_val;
@@ -87,21 +76,9 @@ struct randomoption_group_optoin {
 	int qty;
 };
 
-struct randomoption_group_enchanting_entry {
-	int nameid;
-	int qty;
-	int rate;
-};
-
-struct randomoption_group_enchanting {
-	struct randomoption_group_enchanting_entry enchanting[MAX_RANDOMOPTION_ENTRY];
-	int qty;
-};
-
 struct randomoption_group {
 	int id;
 	struct randomoption_group_optoin options[MAX_ITEM_RANDOMOPTION];
-	struct randomoption_group_enchanting enchantings[MAX_ITEM_RANDOMENCHANTING];
 };
 
 struct randomoption_drop_entry {
@@ -151,7 +128,7 @@ int randomoption_drop_exsits(int id)
 	if (id < MOB_ID_MIN || id >= MOB_ID_MAX)
 		return -1;
 
-	return randomoption_drop_db[id].entry > 0 ? id : -1;
+	return randomoption_drop_db[id].entry > 0 ? id : 0;
 }
 
 void randomoption_set_var(struct script_code *script, const char *name, int val)
@@ -236,7 +213,7 @@ void randomoption_dropitem(struct mob_data * md, unsigned int tick, int first_id
 	struct delay_item_drop2 *head = NULL;
 	struct randomoption_drop *rnd_drop = NULL;
 
-	if (randomoption_drop_exsits(md->class_) != md->class_)
+	if (!randomoption_drop_exsits(md->class_))
 	{
 		return;
 	}
@@ -285,22 +262,6 @@ void randomoption_dropitem(struct mob_data * md, unsigned int tick, int first_id
 
 				drop.opt[pos].id = randomoption_group_db[entry->group].options[j].option[k].option;
 				drop.opt[pos].val = rnd;
-				++pos;
-			}
-		}
-
-		for (j = 0, pos = 0; j < MAX_ITEM_RANDOMENCHANTING && pos < MAX_ITEM_RANDOMENCHANTING - item->slot; ++j)
-		{
-			cnt = randomoption_group_db[entry->group].enchantings[j].qty;
-			if (cnt > 0 && randomoption_group_db[entry->group].enchantings[j].enchanting[cnt - 1].qty > 0)
-			{
-				rnd = atn_rand() % randomoption_group_db[entry->group].enchantings[j].enchanting[cnt - 1].qty;
-				for (k = 0; k < cnt && rnd >= randomoption_group_db[entry->group].enchantings[j].enchanting[k].qty; ++k);
-				rnd = atn_rand() % MAX_ITEM_RANDOMOPTION_RATE;
-				if (randomoption_group_db[entry->group].enchantings[j].enchanting[k].rate <= rnd)
-					continue;
-
-				drop.card[MAX_ITEM_RANDOMENCHANTING - pos - 1] = randomoption_group_db[randomoption_drop_db[md->class_].drops[i].group].enchantings[j].enchanting[k].nameid;
 				++pos;
 			}
 		}
@@ -579,7 +540,6 @@ int randomoption_read_group(void)
 	int ln = 0, lines = 0;
 	int id, j, num = 0, idx = 0, min = 0, max = 0, qty = 0, rate = 0;
 	char *str[8], *p, *np;
-	struct item_data *item = NULL;
 	int entry = 0;
 	const char *filename = "db/random_option_group.txt";
 
@@ -620,27 +580,7 @@ int randomoption_read_group(void)
 		if (idx < 0 || num <= 0 || qty <= 0 || rate <= 0)
 			continue;
 
-		if ((item = itemdb_exists(num)) != NULL)
-		{
-			if (item->type != ITEMTYPE_CARD)
-				continue;
-			if (idx >= MAX_ITEM_RANDOMENCHANTING)
-				continue;
-
-			entry = randomoption_group_db[id].enchantings[idx].qty;
-			if (entry >= MAX_RANDOMOPTION_ENTRY)
-				continue;
-			if (entry > 0)
-				qty += randomoption_group_db[id].enchantings[idx].enchanting[entry - 1].qty;
-			if (qty > MAX_ITEM_RANDOMOPTION_RATE)
-				continue;
-
-			randomoption_group_db[id].enchantings[idx].enchanting[entry].nameid = item->nameid;
-			randomoption_group_db[id].enchantings[idx].enchanting[entry].qty = qty;
-			randomoption_group_db[id].enchantings[idx].enchanting[entry].rate = rate;
-			randomoption_group_db[id].enchantings[idx].qty++;
-		}
-		else if (randomoption_db_exsits(num) == num)
+		if (randomoption_db_exsits(num) == num)
 		{
 			min = atoi(str[3]);
 			max = atoi(str[4]);
@@ -777,6 +717,13 @@ void randomoption_reload(void)
 
 void do_final_randomoption(void)
 {
+	int i;
+
+	for (i = 0; i < MAX_RANDOMOPTION; ++i) {
+		if (randomoption_db[i].script) {
+			script_free_code(randomoption_db[i].script);
+		}
+	}
 }
 
 void do_init_randomoption(void)
