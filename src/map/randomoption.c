@@ -60,8 +60,8 @@
 #define RANDOMOPTION_BONUS4 bonus_param4
 #define RANDOMOPTION_BONUS5 //
 
-int randomoption_cruuent_opt;
-int randomoption_current_val;
+int randomoption_current_opt = 0;
+int randomoption_current_val = 0;
 
 struct randomoption_group_optoin_entry {
 	int option;
@@ -205,13 +205,56 @@ int randomoption_drop_sub(int tid, unsigned int tick, int id, void *data)
 	return 0;
 }
 
+int randomoption_rand(struct item_data * data, int group, struct item * item)
+{
+	int i, j, pos, cnt, rnd;
+	
+	nullpo_retr(0, data);
+	nullpo_retr(0, item);
+
+	if (group <= 0 || group >= MAX_RANDOMOPTION_GROUP)
+		return 0;
+
+	for (i = 0, pos = 0; i < MAX_ITEM_RANDOMOPTION; ++i)
+	{
+		cnt = randomoption_group_db[group].options[i].qty;
+		if (cnt > 0 && randomoption_group_db[group].options[i].option[cnt - 1].qty > 0)
+		{
+			rnd = atn_rand() % randomoption_group_db[group].options[i].option[cnt - 1].qty;
+			for (j = 0; j < cnt && rnd >= randomoption_group_db[group].options[i].option[j].qty; ++j);
+			rnd = atn_rand() % MAX_ITEM_RANDOMOPTION_RATE;
+			if (randomoption_group_db[group].options[i].option[j].rate <= rnd)
+				continue;
+
+			if (randomoption_group_db[group].options[i].option[j].value_max - randomoption_group_db[group].options[i].option[j].value_min <= 0)
+			{
+				rnd = 0;
+			}
+			else
+			{
+				rnd = randomoption_group_db[group].options[i].option[j].value_min +
+					(atn_rand()
+						% (randomoption_group_db[group].options[i].option[j].value_max
+							- randomoption_group_db[group].options[i].option[j].value_min));
+			}
+
+			item->opt[pos].id = randomoption_group_db[group].options[i].option[j].option;
+			item->opt[pos].val = rnd;
+			++pos;
+		}
+	}
+
+	return 1;
+}
+
 void randomoption_dropitem(struct mob_data * md, unsigned int tick, int first_id, int second_id, int third_id)
 {
-	int i, j, k;
-	int pos;
-	struct item_data *item;
+	int i;
 	struct delay_item_drop2 *head = NULL;
 	struct randomoption_drop *rnd_drop = NULL;
+	struct item_data *data;
+
+	nullpo_retv(md);
 
 	if (!randomoption_drop_exsits(md->class_))
 	{
@@ -220,67 +263,43 @@ void randomoption_dropitem(struct mob_data * md, unsigned int tick, int first_id
 	
 	rnd_drop = &randomoption_drop_db[md->class_];
 
-	for (i = 0; i < randomoption_drop_db[md->class_].entry; ++i)
+	for (i = 0; i < rnd_drop->entry; ++i)
 	{
-		int rnd, cnt;
 		struct item drop;
 		struct delay_item_drop2 *ditem;
 		struct randomoption_drop_entry *entry = &rnd_drop->drops[i];
 
-		rnd = atn_rand() % MAX_ITEM_RANDOMOPTION_RATE;
-		if (entry->rate <= rnd)
+		data = itemdb_exists(entry->nameid);
+		if (data == NULL)
 			continue;
 
-		item = itemdb_exists(entry->nameid);
-		if (item == NULL)
+		if (entry->rate <= (atn_rand() % MAX_ITEM_RANDOMOPTION_RATE))
 			continue;
 
 		memset(&drop, 0, sizeof(drop));
 
-		for (j = 0, pos = 0; j < MAX_ITEM_RANDOMOPTION; ++j)
-		{
-			cnt = randomoption_group_db[entry->group].options[j].qty;
-			if (cnt > 0 && randomoption_group_db[entry->group].options[j].option[cnt - 1].qty > 0)
-			{
-				rnd = atn_rand() % randomoption_group_db[entry->group].options[j].option[cnt - 1].qty;
-				for (k = 0; k < cnt && rnd >= randomoption_group_db[entry->group].options[j].option[k].qty; ++k);
-				rnd = atn_rand() % MAX_ITEM_RANDOMOPTION_RATE;
-				if (randomoption_group_db[entry->group].options[j].option[k].rate <= rnd)
-					continue;
-
-				if (randomoption_group_db[entry->group].options[j].option[k].value_max - randomoption_group_db[entry->group].options[j].option[k].value_min <= 0)
-				{
-					rnd = 0;
-				}
-				else
-				{
-					rnd = randomoption_group_db[entry->group].options[j].option[k].value_min +
-						(atn_rand()
-							% (randomoption_group_db[entry->group].options[j].option[k].value_max
-								- randomoption_group_db[entry->group].options[j].option[k].value_min));
-				}
-
-				drop.opt[pos].id = randomoption_group_db[entry->group].options[j].option[k].option;
-				drop.opt[pos].val = rnd;
-				++pos;
-			}
-		}
-
-		drop.nameid = item->nameid;
+		drop.nameid = data->nameid;
 		drop.amount = 1;
 
-		if (randomoption_drop_db[md->class_].drops[i].limit > 0)
+		if (battle_config.itemidentify)
 		{
-			drop.limit = (unsigned int)time(NULL) + randomoption_drop_db[md->class_].drops[i].limit;
 			drop.identify = 1;
 		}
 		else
 		{
-			drop.limit = 0; 
-			drop.identify = !itemdb_isequip3(item->nameid);
-			if (battle_config.itemidentify)
-				drop.identify = 1;
+			drop.identify = !itemdb_isequip3(drop.nameid);
 		}
+
+		if (entry->limit > 0)
+		{
+			drop.limit = (unsigned int)time(NULL) + entry->limit;
+		}
+		else
+		{
+			drop.limit = 0;
+		}
+
+		randomoption_rand(data, entry->group, &drop);
 
 		ditem = (struct delay_item_drop2 *)aCalloc(1, sizeof(struct delay_item_drop2));
 		memcpy(&ditem->item_data, &drop, sizeof(drop));
@@ -301,7 +320,9 @@ void randomoption_dropitem(struct mob_data * md, unsigned int tick, int first_id
 void randomoption_calc_pc(struct map_session_data * sd)
 {
 	int i, idx;
+
 	nullpo_retv(sd);
+
 	for (i = 0; i < EQUIP_INDEX_MAX; i++) {
 		if (i == EQUIP_INDEX_ARROW)
 			continue;
@@ -337,44 +358,44 @@ void randomoption_calc_item(struct map_session_data * sd, struct item * item)
 
 	for (i = 0; i < MAX_ITEM_RANDOMOPTION; ++i)
 	{
-		randomoption_cruuent_opt = item->opt[i].id;
+		randomoption_current_opt = item->opt[i].id;
 		randomoption_current_val = item->opt[i].val;
 
-		if (randomoption_db_exsits(randomoption_cruuent_opt) == randomoption_cruuent_opt)
+		if (randomoption_db_exsits(randomoption_current_opt) == randomoption_current_opt)
 		{
-			if (randomoption_db[randomoption_cruuent_opt].script != NULL)
+			if (randomoption_db[randomoption_current_opt].script != NULL)
 			{
-				randomoption_run_script(sd, randomoption_db[randomoption_cruuent_opt].script, randomoption_current_val);
+				randomoption_run_script(sd, randomoption_db[randomoption_current_opt].script, randomoption_current_val);
 			}
 			else
 			{
 				int var[5] = { 0, };
-				memcpy(var, randomoption_db[randomoption_cruuent_opt].var, sizeof(var));
-				if (randomoption_db[randomoption_cruuent_opt].param_index >= 0 && randomoption_db[randomoption_cruuent_opt].param_index < 5) {
-					var[randomoption_db[randomoption_cruuent_opt].param_index] = randomoption_current_val;
+				memcpy(var, randomoption_db[randomoption_current_opt].var, sizeof(var));
+				if (randomoption_db[randomoption_current_opt].param_index >= 0 && randomoption_db[randomoption_current_opt].param_index < 5) {
+					var[randomoption_db[randomoption_current_opt].param_index] = randomoption_current_val;
 				}
 
-				switch (randomoption_db[randomoption_cruuent_opt].param_count) {
+				switch (randomoption_db[randomoption_current_opt].param_count) {
 				case 1:
-					RANDOMOPTION_BONUS1(sd, randomoption_db[randomoption_cruuent_opt].bonus, var[0]);
+					RANDOMOPTION_BONUS1(sd, randomoption_db[randomoption_current_opt].bonus, var[0]);
 					break;
 				case 2:
-					RANDOMOPTION_BONUS2(sd, randomoption_db[randomoption_cruuent_opt].bonus, var[0], var[1]);
+					RANDOMOPTION_BONUS2(sd, randomoption_db[randomoption_current_opt].bonus, var[0], var[1]);
 					break;
 				case 3:
-					RANDOMOPTION_BONUS3(sd, randomoption_db[randomoption_cruuent_opt].bonus, var[0], var[1], var[2]);
+					RANDOMOPTION_BONUS3(sd, randomoption_db[randomoption_current_opt].bonus, var[0], var[1], var[2]);
 					break;
 				case 4:
-					RANDOMOPTION_BONUS4(sd, randomoption_db[randomoption_cruuent_opt].bonus, var[0], var[1], var[2], var[3]);
+					RANDOMOPTION_BONUS4(sd, randomoption_db[randomoption_current_opt].bonus, var[0], var[1], var[2], var[3]);
 					break;
 				case 5:
-					RANDOMOPTION_BONUS5(sd, randomoption_db[randomoption_cruuent_opt].bonus, var[0], var[1], var[2], var[3], var[4]);
+					RANDOMOPTION_BONUS5(sd, randomoption_db[randomoption_current_opt].bonus, var[0], var[1], var[2], var[3], var[4]);
 					break;
 				}
 			}
 		}
 
-		randomoption_cruuent_opt = 0;
+		randomoption_current_opt = 0;
 		randomoption_current_val = 0;
 	}
 }
@@ -409,7 +430,9 @@ int get_int(char *str)
 	int val = 0;
 	char *p = trim(str);
 
-	if (str[0] == '?')
+	nullpo_retr(0, p);
+
+	if (p[0] == '?')
 	{
 		return 0;
 	}
@@ -538,7 +561,7 @@ int randomoption_read_group(void)
 	FILE *fp;
 	char line[4096];
 	int ln = 0, lines = 0;
-	int id, j, num = 0, idx = 0, min = 0, max = 0, qty = 0, rate = 0;
+	int id, j, opt = 0, idx = 0, min = 0, max = 0, qty = 0, rate = 0;
 	char *str[8], *p, *np;
 	int entry = 0;
 	const char *filename = "db/random_option_group.txt";
@@ -563,12 +586,12 @@ int randomoption_read_group(void)
 		if (j < 5 || str[0] == NULL || str[2] == NULL)
 			continue;
 
-		id = get_int(str[0]) - 1;
+		id = get_int(str[0]);
 		if (id < 0 || id >= MAX_RANDOMOPTION_GROUP)
 			continue;
 
-		idx = atoi(str[1]) - 1;
-		num = get_int(str[2]);
+		idx = atoi(str[1]);
+		opt = get_int(str[2]);
 		qty = atoi(str[5]);
 		rate = j > 6 ? atoi(str[6]) : MAX_ITEM_RANDOMOPTION_RATE;
 
@@ -577,11 +600,14 @@ int randomoption_read_group(void)
 			rate = MAX_ITEM_RANDOMOPTION_RATE;
 		}
 
-		if (idx < 0 || num <= 0 || qty <= 0 || rate <= 0)
+		if (idx < 0 || opt < 0 || qty <= 0 || rate <= 0)
 			continue;
 
-		if (randomoption_db_exsits(num) == num)
+		if (randomoption_db_exsits(opt) == opt)
 		{
+			if (idx >= MAX_ITEM_RANDOMOPTION)
+				continue;
+
 			min = atoi(str[3]);
 			max = atoi(str[4]);
 
@@ -598,12 +624,12 @@ int randomoption_read_group(void)
 
 			if (min > max)
 			{
-				int tmp = min;
-				min = max;
-				max = tmp;
+				min = min ^ max;
+				max = min ^ max;
+				min = min ^ max;
 			}
 
-			randomoption_group_db[id].options[idx].option[entry].option = num;
+			randomoption_group_db[id].options[idx].option[entry].option = opt;
 			randomoption_group_db[id].options[idx].option[entry].value_min = min;
 			randomoption_group_db[id].options[idx].option[entry].value_max = max;
 			randomoption_group_db[id].options[idx].option[entry].qty = qty;
