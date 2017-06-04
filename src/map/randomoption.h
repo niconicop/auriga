@@ -25,10 +25,6 @@
 extern int randomoption_cruuent_opt;
 extern int randomoption_current_val;
 
-void randomoption_dropitem(struct mob_data *md, unsigned int tick, int first_id, int second_id, int third_id);
-void randomoption_calc_pc(struct map_session_data *sd);
-void randomoption_calc_item(struct map_session_data *sd, struct item *item);
-
 void randomoption_reload(void);
 
 void do_final_randomoption(void);

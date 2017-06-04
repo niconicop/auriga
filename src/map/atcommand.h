@@ -197,6 +197,7 @@ typedef enum {
 	AtCommand_HotkeySet,
 	AtCommand_CallMerc,
 	AtCommand_Alliance,
+	AtCommand_ReloadRandomOption,
 	AtCommand_Unknown,
 	AtCommand_MAX,
 } AtCommandType;
