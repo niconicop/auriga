@@ -656,7 +656,7 @@ int randomoption_read_drop(void)
 	FILE *fp;
 	char line[4096];
 	int ln = 0, lines = 0;
-	int id, j, num = 0, rate = 0, limit = 0;
+	int id, itemid, j, num = 0, rate = 0, limit = 0;
 	char *str[8], *p, *np;
 	struct item_data *item = NULL;
 	int entry = 0;
@@ -679,25 +679,40 @@ int randomoption_read_drop(void)
 			p = strchr(p, ',');
 			if (p) { *p++ = 0; np = p; }
 		}
-		if (str[0] == NULL)
+		if (str[0] == NULL){
+			printf("randomoption_drop_db: mob not found. \n");
 			continue;
+		}
 
 		id = atoi(str[0]);
-		if (id <= 0 || id != mobdb_checkid(id))
+		if (id <= 0 || id != mobdb_checkid(id)){
+			printf("randomoption_drop_db: mob not found. \n");
 			continue;
+		}
+		
+		itemid = atoi(str[1]);
+		item = itemdb_exists(itemid);
+		if (!item){
+			printf("randomoption_drop_db: item(%d) not found. \n", itemid);
+			continue;
+		}
+		if (!itemdb_isequip(item->nameid)){
+			printf("randomoption_drop_db: item is not equip. \n");
+			continue;
+		}
 
-		item = itemdb_exists(atoi(str[1]));
-		if (item == NULL || !itemdb_isequip(item->nameid))
+		num = get_int(str[2]);
+		if (num <= 0 || randomoption_group_exsits(num) < 0){
+			printf("randomoption_drop_db: group(%d) not found. \n", num);
 			continue;
-
-		num = atoi(str[2]) - 1;
-		if (num < 0 || randomoption_group_exsits(num) < 0)
-			continue;
+		}
 
 		rate = atoi(str[3]);
 
-		if (rate <= 0)
+		if (rate <= 0){
+			printf("rate <= 0 (count=%d)\n", ln);
 			continue;
+		}
 
 		limit = atoi(str[4]);
 
@@ -709,8 +724,10 @@ int randomoption_read_drop(void)
 
 		entry = randomoption_drop_db[id].entry;
 
-		if (entry >= MAX_ITEM_RANDOMOPTION_DROP)
+		if (entry >= MAX_ITEM_RANDOMOPTION_DROP){
+			printf("entry >= MAX_ITEM_RANDOMOPTION_DROP (count=%d)\n", ln);
 			continue;
+		}
 
 		randomoption_drop_db[id].drops[entry].nameid = item->nameid;
 		randomoption_drop_db[id].drops[entry].group = num;
