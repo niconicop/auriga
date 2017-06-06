@@ -92,7 +92,7 @@ OPT_BODY_ATTR_SAINT,bDefEle,Ele_Holy
 OPT_BODY_ATTR_DARKNESS,bDefEle,Ele_Dark
 OPT_BODY_ATTR_TELEKINESIS,bDefEle,Ele_Ghost
 OPT_BODY_ATTR_UNDEAD,bDefEle,Ele_Undead
-OPT_BODY_ATTR_ALL,{ bonus2 bDefEle,Ele_Neutral; bonus2 bDefEle,Ele_Water; bonus2 bDefEle,Ele_Earth; bonus2 bDefEle,Ele_Fire; bonus2 bDefEle,Ele_Wind; bonus2 bDefEle,Ele_Poison; bonus2 bDefEle,Ele_Holy; bonus2 bDefEle,Ele_Dark; bonus2 bDefEle,Ele_Ghost; bonus2 bDefEle,Ele_Undead; }
+OPT_BODY_ATTR_ALL,{ bonus2 bDefEle,Ele_Neutral,'option_val; bonus2 bDefEle,Ele_Water,'option_val; bonus2 bDefEle,Ele_Earth,'option_val; bonus2 bDefEle,Ele_Fire,'option_val; bonus2 bDefEle,Ele_Wind,'option_val; bonus2 bDefEle,Ele_Poison,'option_val; bonus2 bDefEle,Ele_Holy,'option_val; bonus2 bDefEle,Ele_Dark,'option_val; bonus2 bDefEle,Ele_Ghost,'option_val; bonus2 bDefEle,Ele_Undead,'option_val; }
 
 OPT_RACE_TOLERACE_NOTHING,bSubRace,Rct_Formless,?
 OPT_RACE_TOLERACE_UNDEAD,bSubRace,Rct_Undead,?
