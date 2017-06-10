@@ -142,11 +142,13 @@ void randomoption_set_var(struct script_code *script, const char *name, int val)
 
 		num = script_add_str(name);
 
-		if (val != 0) {
-			old_var = linkdb_replace(&script->script_vars, INT2PTR(num), INT2PTR(val));
-		}
-		else {
-			old_var = linkdb_erase(&script->script_vars, INT2PTR(num));
+		if( linkdb_exists(&script->script_vars, INT2PTR(num)) == 0) {
+			if (val != 0) {
+				old_var = linkdb_replace(&script->script_vars, INT2PTR(num), INT2PTR(val));
+			}
+			else {
+				old_var = linkdb_erase(&script->script_vars, INT2PTR(num));
+			}
 		}
 
 		if (old_var)
