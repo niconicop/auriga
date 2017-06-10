@@ -187,6 +187,7 @@ int randomoption_drop_sub(int tid, unsigned int tick, int id, void *data)
 				}
 				else {
 					aFree(ditem);
+					ditem = next;
 					continue;
 				}
 			}
